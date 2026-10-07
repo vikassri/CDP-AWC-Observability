@@ -19,12 +19,7 @@ Do not suggest arbitrary shell, secrets, or Cloudera Manager changes. Be concise
 
 
 def _compress_context(text: str) -> str:
-    try:
-        from headroom import compress  # type: ignore[import-not-found]
-
-        return compress(text)
-    except Exception:  # noqa: BLE001
-        return text[:12_000]
+    return text[:12_000]
 
 
 async def recommend_for_issues(payload: dict[str, Any]) -> dict[str, Any]:
@@ -45,7 +40,7 @@ async def recommend_for_issues(payload: dict[str, Any]) -> dict[str, Any]:
     if not base:
         return {
             "recommendation": (
-                "LLM not configured. Set `CPW_LLM_BASE_URL` (Headroom proxy `http://127.0.0.1:8787/v1`) "
+                "LLM not configured. Set `CPW_LLM_BASE_URL` (your OmniRoute OpenAI-compatible URL) "
                 "and `CPW_LLM_API_KEY` / model in `.env`, then retry."
             ),
             "model": None,

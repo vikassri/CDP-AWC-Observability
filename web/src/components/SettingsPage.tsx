@@ -207,7 +207,7 @@ export function SettingsPage() {
           <div>
             <h2 className="settings-hero-title">Platform settings</h2>
             <p className="settings-intro">
-              Cloudera AWC, Knox JWT, Prometheus hub, SMTP alerts, and Headroom LLM inference.
+              Cloudera AWC, Knox JWT, Prometheus hub, SMTP alerts, and OmniRoute LLM inference.
               Changes write to{" "}
               <code className="settings-path mono" title={snap.env_file}>
                 {shortPath(snap.env_file)}
@@ -272,7 +272,7 @@ export function SettingsPage() {
           <SettingsField
             label="LLM base URL"
             wide
-            hint={`Headroom default: ${snap.inference.headroom_proxy_default}`}
+            hint={`Example gateway: ${snap.inference.gateway_example}`}
           >
             <input
               className="settings-input"

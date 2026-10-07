@@ -30,9 +30,10 @@ class Settings(BaseSettings):
     collector_interval_sec: int = 60
     alert_eval_interval_sec: int = 15
     cpw_overview_cache_sec: float = 1.25
-    cpw_llm_base_url: str = "http://127.0.0.1:8787/v1"
+    cpw_llm_base_url: str = ""
     cpw_llm_model: str = "openai/gpt-4o-mini"
     cpw_llm_api_key: str = ""
+    ssl_cert_file: str = ""
 
     smtp_host: str = "127.0.0.1"
     smtp_port: int = 1025

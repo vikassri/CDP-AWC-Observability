@@ -67,9 +67,10 @@ def build_settings_snapshot() -> dict[str, Any]:
             "api_key_configured": _secret_configured(settings.cpw_llm_api_key),
             "api_key_hint": _mask_secret(settings.cpw_llm_api_key),
             "overview_cache_sec": settings.cpw_overview_cache_sec,
-            "headroom_proxy_default": "http://127.0.0.1:8787/v1",
+            "gateway_example": "https://your-omniroute-host/v1",
             "notes": [
-                "Use Headroom (headroom wrap cursor) to compress deployment context before LLM calls.",
+                "Point CPW_LLM_BASE_URL at your OmniRoute (or other OpenAI-compatible) gateway.",
+                "For HTTPS with a private CA, set SSL_CERT_FILE when starting the backend (see README).",
                 "Recommendations API: POST /recommendations",
             ],
         },

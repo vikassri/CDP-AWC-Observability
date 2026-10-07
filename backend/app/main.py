@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -30,12 +31,20 @@ from backend.app.services.alert_bootstrap import ensure_alert_assignments
 from backend.app.services.alert_engine import alert_engine
 from backend.app.services.collector_supervisor import supervisor
 from backend.app.services.knox_secrets import sync_knox_jwt_file
+from backend.app.settings import settings
 
 logging.basicConfig(level=logging.INFO)
 
 
+def _apply_ssl_cert_env() -> None:
+    cert_path = (settings.ssl_cert_file or os.environ.get("SSL_CERT_FILE") or "").strip()
+    if cert_path:
+        os.environ["SSL_CERT_FILE"] = cert_path
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _apply_ssl_cert_env()
     sync_knox_jwt_file()
     from collectors.knox_sd import sync_knox_targets
 

@@ -37,6 +37,61 @@ Sign in at http://127.0.0.1:5173 with default credentials **admin** / **admin** 
 4. Optional default recipients: `ALERT_DEFAULT_RECIPIENTS=you@company.com`
 5. Test routing: **Test SMTP** in the alert panel, or `POST /alerts/test-email?to=you@company.com`
 
+## LLM (OmniRoute)
+
+Set in `.env` or **Settings → AI inference**:
+
+```bash
+CPW_LLM_BASE_URL=https://your-omniroute-host/v1
+CPW_LLM_MODEL=openai/gpt-4o-mini   # or the model name OmniRoute expects
+CPW_LLM_API_KEY=your-omniroute-key
+```
+
+The UI calls `POST /recommendations` on the backend only; the backend calls OmniRoute. No API key is sent to the browser.
+
+### TLS / custom CA (OmniRoute HTTPS)
+
+If OmniRoute uses HTTPS signed by a **private or corporate CA**, point Python/httpx at your trust bundle before starting the API:
+
+```bash
+export SSL_CERT_FILE=/path/to/your-ca-bundle.pem
+# optional: append OmniRoute server cert if needed
+# cat omniroute-server.crt >> "$SSL_CERT_FILE"
+
+export PYTHONPATH=.
+uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8080
+```
+
+On macOS you can export a CA from Keychain Access (`.pem`) or combine roots from your security team.
+
+**Mutual TLS (client cert to OmniRoute):** not built into CAO today; terminate mTLS at a sidecar/reverse proxy in front of OmniRoute, or use an API key only on `https://` OmniRoute as usual.
+
+### TLS for the CAO UI (browser)
+
+Recommended: terminate TLS on a reverse proxy, not inside uvicorn.
+
+**Caddy (automatic Let’s Encrypt or your cert files):**
+
+```caddy
+cao.example.com {
+  tls /etc/ssl/cao/fullchain.pem /etc/ssl/cao/privkey.pem
+  reverse_proxy 127.0.0.1:5173
+  handle /api/* {
+    uri strip_prefix /api
+    reverse_proxy 127.0.0.1:8080
+  }
+}
+```
+
+**Direct uvicorn TLS (dev/lab only):**
+
+```bash
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8443 \
+  --ssl-keyfile=/path/to/key.pem --ssl-certfile=/path/to/cert.pem
+```
+
+Then set the Vite dev proxy target to `https://127.0.0.1:8443` or serve the built `web/dist` from the same proxy.
+
 ## API
 
 - `GET /clusters`, `GET /clusters/{id}/health`, `GET /engines`, `GET /awc/catalog`

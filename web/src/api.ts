@@ -311,7 +311,7 @@ export type AppSettingsSnapshot = {
     api_key_configured: boolean
     api_key_hint: string
     overview_cache_sec: number
-    headroom_proxy_default: string
+    gateway_example: string
     notes: string[]
   }
   cloudera: {
