@@ -1,0 +1,19 @@
+groups:
+  - name: airflow_hub
+    rules:
+      - alert: AirflowDagRunFailed
+        expr: sum(increase(airflow_dagrun_finished_total{cluster="cwo", state=~"(?i)failed"}[15m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+          product: airflow
+        annotations:
+          summary: "Airflow DAG run failures in last 15m"
+      - alert: AirflowTaskFailures
+        expr: sum(increase(airflow_taskinstance_finished_total{cluster="cwo", state=~"(?i)failed"}[15m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+          product: airflow
+        annotations:
+          summary: "Airflow task failures in last 15m"

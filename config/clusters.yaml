@@ -1,0 +1,69 @@
+clusters:
+  - id: cdf
+    display_name: CDF NiFi
+    product: nifi
+    context: cdf01-1-8
+    kubeconfig: kubeconfigs/cdf.yaml
+    awc_engine_id: cdf
+    collectors:
+      - nifi_metrics
+      - nifi_logs
+    # Optional Knox HTTPS fallback scrape (requires secrets/knox.jwt from KNOX_JWT in .env)
+    # knox_metrics_url: https://cdf.example.com/gateway/cdf/dfx-nifi/metrics/prometheus
+    knox_metrics_url: ""
+
+  - id: cde
+    display_name: CDE Spark
+    product: spark
+    context: cde01-1-5
+    kubeconfig: kubeconfigs/cde.yaml
+    awc_engine_id: cde
+    collectors:
+      - spark_metrics
+      - spark_logs
+
+  - id: csa
+    display_name: CSA Flink
+    product: flink
+    context: csa01-1-9
+    kubeconfig: kubeconfigs/csa.yaml
+    awc_engine_id: csa
+    collectors:
+      - flink_metrics
+      - flink_logs
+
+  - id: cle
+    display_name: CLE Trino
+    product: trino
+    context: cle01-1-10
+    kubeconfig: kubeconfigs/cle.yaml
+    awc_engine_id: cle
+    collectors:
+      - trino_metrics
+      - trino_logs
+
+  - id: cwo
+    display_name: CWO Airflow
+    product: airflow
+    context: cwo01-1-12
+    kubeconfig: kubeconfigs/cwo.yaml
+    awc_engine_id: cwo
+    collectors:
+      - airflow_metrics
+      - airflow_logs
+
+  - id: cai
+    display_name: CAI
+    product: cai
+    context: cai01-1-6
+    kubeconfig: kubeconfigs/cai.yaml
+    awc_engine_id: cai
+    collectors: []
+
+  - id: polaris
+    display_name: Apache Polaris
+    product: polaris
+    context: polaris-1-16
+    kubeconfig: kubeconfigs/polaris.yaml
+    awc_engine_id: polaris
+    collectors: []

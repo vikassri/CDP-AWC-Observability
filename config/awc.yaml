@@ -1,0 +1,3 @@
+console_base_url: https://console.awc.spoc.cloudera-labs.com
+engines_path: /deployed-experiences?view=engines
+catalog_source: static

@@ -1,0 +1,20 @@
+groups:
+  - name: spark_hub
+    rules:
+      - alert: SparkAppFailed
+        expr: sum(spark_application_failed{cluster="cde"}) > 0
+        for: 0m
+        labels:
+          severity: critical
+          product: spark
+        annotations:
+          summary: "Spark application failure detected"
+          description: "One or more Spark apps report failed state on {{ $labels.cluster }}"
+      - alert: SparkAppsSubmittedStuck
+        expr: sum(spark_applications_total{cluster="cde", state=~"(?i).*submitted.*"}) > 3
+        for: 0m
+        labels:
+          severity: warning
+          product: spark
+        annotations:
+          summary: "Multiple Spark apps stuck in Submitted"

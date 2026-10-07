@@ -1,0 +1,13 @@
+.env
+secrets/
+kubeconfigs/
+*.pem
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+deploy/data/
+*.jwt
+.DS_Store
+web/dist/

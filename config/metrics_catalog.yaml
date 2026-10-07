@@ -1,0 +1,128 @@
+# PromQL uses $cluster replaced with cluster id (cdf, cde, …)
+
+charts:
+  - product: nifi
+    title: Backpressure — max % (object count)
+    query: max(nifi_percent_used_count{cluster="$cluster"}) * 100
+  - product: nifi
+    title: Backpressure — max % (bytes)
+    query: max(nifi_percent_used_bytes{cluster="$cluster"}) * 100
+  - product: nifi
+    title: Queued content (bytes)
+    query: sum(nifi_size_content_queued_total{cluster="$cluster"})
+  - product: nifi
+    title: Total content input (bytes)
+    query: sum(nifi_size_content_input_total{cluster="$cluster"})
+  - product: nifi
+    title: Total content output (bytes)
+    query: sum(nifi_size_content_output_total{cluster="$cluster"})
+  - product: nifi
+    title: FlowFiles received
+    query: sum(nifi_amount_flowfiles_received{cluster="$cluster"})
+  - product: nifi
+    title: FlowFiles transferred
+    query: sum(nifi_amount_flowfiles_transferred{cluster="$cluster"})
+  - product: nifi
+    title: FlowFiles sent
+    query: sum(nifi_amount_flowfiles_sent{cluster="$cluster"})
+  - product: nifi
+    title: Items queued
+    query: sum(nifi_amount_items_queued{cluster="$cluster"})
+  - product: nifi
+    title: NiFi JVM heap usage (%)
+    query: avg(nifi_jvm_heap_usage{cluster="$cluster"}) * 100
+  - product: nifi
+    title: Deployed NiFi flows
+    query: sum(count by (nifi_namespace) (nifi_amount_threads_active{cluster="$cluster", component_type="RootProcessGroup"}))
+
+  - product: spark
+    title: Spark applications by state
+    query: sum by (state) (spark_applications_total{cluster="$cluster"})
+  - product: spark
+    title: Spark driver pods
+    query: sum(spark_driver_pods_up{cluster="$cluster"})
+
+  - product: trino
+    title: Trino engine ready
+    query: max(trino_engine_ready{cluster="$cluster"})
+  - product: trino
+    title: Trino query events (timeline)
+    query: sum by (query_state) (trino_query_timeline_total{cluster="$cluster"})
+
+  - product: flink
+    title: Flink deployments by job state
+    query: sum by (job_state) (flink_deployments_total{cluster="$cluster"})
+  - product: flink
+    title: Flink session jobs by state
+    query: sum by (job_state) (flink_sessionjobs_total{cluster="$cluster"})
+
+  - product: airflow
+    title: Airflow DAG runs by state
+    query: sum by (state) (airflow_dagrun_finished_total{cluster="$cluster"})
+  - product: airflow
+    title: Airflow task instances by state
+    query: sum by (state) (airflow_taskinstance_finished_total{cluster="$cluster"})
+
+job_status:
+  - product: nifi
+    key: deployed_flows
+    label: Deployed flows
+    query: sum(count by (nifi_namespace) (nifi_amount_threads_active{cluster="$cluster", component_type="RootProcessGroup"}))
+    unit: count
+  - product: nifi
+    key: memory_usage
+    label: Memory usage
+    query: avg(nifi_jvm_heap_usage{cluster="$cluster"}) * 100
+    unit: percent
+
+  - product: spark
+    key: apps_total
+    label: Apps tracked
+    query: sum(spark_applications_total{cluster="$cluster"})
+  - product: spark
+    key: failed
+    label: Apps failed
+    query: sum(spark_application_failed{cluster="$cluster"})
+  - product: spark
+    key: running
+    label: Apps running
+    query: sum(spark_applications_total{cluster="$cluster",state=~"(?i)(running|submitted|pending)"})
+
+  - product: trino
+    key: running
+    label: Queries (running)
+    query: sum(trino_query_timeline_total{cluster="$cluster",query_state=~"(?i).*running.*"})
+  - product: trino
+    key: failed
+    label: Queries (failed)
+    query: sum(trino_query_timeline_total{cluster="$cluster",query_state=~"(?i).*fail.*"})
+  - product: trino
+    key: ready
+    label: Engine ready
+    query: max(trino_engine_ready{cluster="$cluster"})
+
+  - product: flink
+    key: running
+    label: Jobs running
+    query: sum(flink_deployments_total{cluster="$cluster",job_state="RUNNING"}) + sum(flink_sessionjobs_total{cluster="$cluster",job_state="RUNNING"})
+  - product: flink
+    key: failed
+    label: Jobs failed
+    query: sum(flink_deployments_total{cluster="$cluster",job_state="FAILED"}) + sum(flink_sessionjobs_total{cluster="$cluster",job_state="FAILED"})
+  - product: flink
+    key: deployments
+    label: Deployments (CR)
+    query: sum(flink_deployments_total{cluster="$cluster"})
+
+  - product: airflow
+    key: schedulers
+    label: Scheduler pods up
+    query: sum(airflow_scheduler_pods_up{cluster="$cluster"})
+  - product: airflow
+    key: healthy_components
+    label: Healthy components
+    query: sum(airflow_component_healthy{cluster="$cluster"})
+  - product: airflow
+    key: api_up
+    label: API reachable
+    query: sum(airflow_api_reachable{cluster="$cluster"})

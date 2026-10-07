@@ -1,0 +1,19 @@
+groups:
+  - name: flink_hub
+    rules:
+      - alert: FlinkJobFailed
+        expr: sum(flink_deployments_total{cluster="csa", job_state="FAILED"}) > 0
+        for: 0m
+        labels:
+          severity: critical
+          product: flink
+        annotations:
+          summary: "Flink deployment in FAILED state"
+      - alert: FlinkSessionJobFailed
+        expr: sum(flink_sessionjobs_total{cluster="csa", job_state="FAILED"}) > 0
+        for: 0m
+        labels:
+          severity: warning
+          product: flink
+        annotations:
+          summary: "Flink session job failed"

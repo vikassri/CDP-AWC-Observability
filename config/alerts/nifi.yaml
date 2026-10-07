@@ -1,0 +1,27 @@
+groups:
+  - name: nifi_hub
+    rules:
+      - alert: NiFiFlowFilesQueuedHigh
+        expr: sum(nifi_amount_flowfiles_queued{cluster="cdf"}) > 10000
+        for: 0m
+        labels:
+          severity: warning
+          product: nifi
+        annotations:
+          summary: "NiFi queued flow files high"
+      - alert: NiFiProcessorsStopped
+        expr: sum(nifi_processor_run_status{cluster="cdf"} == 0) > 0 and sum(nifi_processor_run_status{cluster="cdf"} == 1) == 0
+        for: 0m
+        labels:
+          severity: critical
+          product: nifi
+        annotations:
+          summary: "All NiFi processors stopped"
+      - alert: NiFiStatusExporterDown
+        expr: max(nifi_status_exporter_up{cluster="cdf"}) < 1
+        for: 0m
+        labels:
+          severity: warning
+          product: nifi
+        annotations:
+          summary: "NiFi status exporter not reporting"

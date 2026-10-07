@@ -1,0 +1,19 @@
+groups:
+  - name: trino_hub
+    rules:
+      - alert: TrinoEngineNotReady
+        expr: max(trino_engine_ready{cluster="cle"}) < 1
+        for: 0m
+        labels:
+          severity: critical
+          product: trino
+        annotations:
+          summary: "Trino engine not ready"
+      - alert: TrinoNodeDown
+        expr: sum(trino_node_up{cluster="cle"}) < 1
+        for: 0m
+        labels:
+          severity: warning
+          product: trino
+        annotations:
+          summary: "Trino worker/coordinator nodes down"

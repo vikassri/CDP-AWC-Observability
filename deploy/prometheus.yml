@@ -1,0 +1,61 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: nifi_federate
+    honor_labels: true
+    metrics_path: /federate
+    params:
+      match[]:
+        - '{job="dfx-nifi-web"}'
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/file_sd/nifi_federate.json
+        refresh_interval: 30s
+
+  - job_name: trino_status
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/file_sd/trino_status.json
+        refresh_interval: 30s
+
+  - job_name: spark_status
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/file_sd/spark_status.json
+        refresh_interval: 30s
+
+  - job_name: flink_status
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/file_sd/flink_status.json
+        refresh_interval: 30s
+
+  - job_name: airflow_status
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/file_sd/airflow_status.json
+        refresh_interval: 30s
+
+  - job_name: nifi_status
+    static_configs:
+      - targets: ["host.docker.internal:19680"]
+        labels:
+          cluster: cdf
+          product: nifi
+
+  - job_name: nifi_knox
+    scheme: https
+    metrics_path: /metrics/prometheus
+    tls_config:
+      insecure_skip_verify: true
+    bearer_token_file: /etc/prometheus/secrets/knox.jwt
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/file_sd/nifi_knox.json
+        refresh_interval: 60s
