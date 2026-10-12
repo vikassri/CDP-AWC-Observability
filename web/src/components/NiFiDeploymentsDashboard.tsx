@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { fetchNifiOverview, type NifiDeploymentRow } from "../api"
 import { REFETCH_FAST_MS } from "../constants/refetch"
 import { NIFI_CLUSTER_CHARTS, nifiNamespaceCharts } from "../constants/nifiCharts"
@@ -10,7 +10,10 @@ import { CollapsibleSection } from "./CollapsibleSection"
 import { ClusterLogsPanel } from "./ClusterLogsPanel"
 import { DeploymentLogsBlock } from "./DeploymentLogsBlock"
 import { StatusPill } from "./StatusPill"
+import { DeploymentCollapsibleCard, deploymentStatusVariant, deploymentStatusLabel } from "./DeploymentCollapsibleCard"
+import { DeploymentSearchList } from "./DeploymentSearchList"
 import { deploymentKey } from "../utils/deploymentKey"
+import { pickDefaultExpandedDeploymentKey } from "../utils/deploymentExpand"
 import { buildLogAnalyzeContext } from "./LogAiAnalyze"
 import { aggregateDeploymentLogs } from "../utils/logHits"
 
@@ -20,32 +23,13 @@ type NiFiDeploymentsDashboardProps = {
   onFocusApplied?: () => void
 }
 
-function statusVariant(status: string): "ok" | "warn" | "crit" | "unknown" {
-  if (status === "healthy") return "ok"
-  if (status === "degraded") return "warn"
-  if (status === "critical") return "crit"
-  return "unknown"
-}
-
-function statusLabel(status: string): string {
-  if (status === "healthy") return "Healthy"
-  if (status === "degraded") return "Degraded"
-  if (status === "critical") return "Critical"
-  return status
-}
-
-function stackClass(status: string): string {
-  if (status === "healthy") return "healthy"
-  if (status === "critical") return "critical"
-  return "contributing"
-}
-
 export function NiFiDeploymentsDashboard({
   clusterId = "cdf",
   focusNamespace,
   onFocusApplied,
 }: NiFiDeploymentsDashboardProps) {
   const [expandedNs, setExpandedNs] = useState<string | null>(null)
+  const expandInitRef = useRef(false)
 
   const overview = useQuery({
     queryKey: ["nifi-overview", clusterId],
@@ -87,20 +71,23 @@ export function NiFiDeploymentsDashboard({
     }
   }, [clusterId, clusterLogAll, clusterLogs, data?.deployments, issueCount])
 
+  const deploymentList = data?.deployments ?? []
+  const multipleDeployments = deploymentList.length > 1
+
+  useEffect(() => {
+    expandInitRef.current = false
+  }, [clusterId])
+
   useEffect(() => {
     if (focusNamespace) {
-      const match = data?.deployments?.find((d) => d.namespace === focusNamespace)
-      setExpandedNs(
-        match ? deploymentKey(match.namespace, match.name) : focusNamespace
-      )
+      setExpandedNs(pickDefaultExpandedDeploymentKey(deploymentList, focusNamespace))
       onFocusApplied?.()
       return
     }
-    const first = data?.deployments?.[0]
-    if (first && !expandedNs) {
-      setExpandedNs(deploymentKey(first.namespace, first.name))
-    }
-  }, [data?.deployments, expandedNs, focusNamespace, onFocusApplied])
+    if (expandInitRef.current || !deploymentList.length) return
+    expandInitRef.current = true
+    setExpandedNs(pickDefaultExpandedDeploymentKey(deploymentList))
+  }, [deploymentList, focusNamespace, onFocusApplied, clusterId])
 
   return (
     <section className="nifi-dashboard">
@@ -113,61 +100,45 @@ export function NiFiDeploymentsDashboard({
       <div className="panel">
         <div className="panel-header">
           <h2 className="panel-title">NiFi deployments — {data?.display_name ?? clusterId}</h2>
-          <StatusPill
-            variant={overview.isFetching ? "warn" : issueCount ? "warn" : "ok"}
-            label={
-              overview.isFetching
-                ? "Syncing…"
-                : issueCount
-                  ? `${issueCount} with issues · ${REFETCH_FAST_MS / 1000}s`
-                  : `Live · ${REFETCH_FAST_MS / 1000}s`
-            }
-          />
+          <div className="panel-header-actions">
+            {multipleDeployments ? (
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => setExpandedNs(null)}
+              >
+                Collapse all
+              </button>
+            ) : null}
+            <StatusPill
+              variant={overview.isFetching ? "warn" : issueCount ? "warn" : "ok"}
+              label={
+                overview.isFetching
+                  ? "Syncing…"
+                  : issueCount
+                    ? `${issueCount} with issues · ${REFETCH_FAST_MS / 1000}s`
+                    : `Live · ${REFETCH_FAST_MS / 1000}s`
+              }
+            />
+          </div>
         </div>
 
         <div className="panel-body" style={{ paddingTop: 0 }}>
-          <table className="data-table nifi-dep-table">
-            <thead>
-              <tr>
-                <th>Deployment</th>
-                <th>Status</th>
-                <th>Pods</th>
-                <th>Issues</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data?.deployments ?? []).map((dep) => {
-                const key = deploymentKey(dep.namespace, dep.name)
-                return (
-                <tr
-                  key={key}
-                  className={expandedNs === key ? "selected" : ""}
-                  onClick={() => setExpandedNs(key)}
-                >
-                  <td>
-                    <strong className="mono">{dep.namespace}</strong>
-                  </td>
-                  <td>
-                    <StatusPill variant={statusVariant(dep.status)} label={statusLabel(dep.status)} />
-                  </td>
-                  <td className="mono">
-                    {dep.pods_ready ?? "—"}/{dep.pods_total ?? "—"}
-                  </td>
-                  <td>
-                    {dep.issues.length ? (
-                      <span className="nifi-issue-summary">{dep.issues[0]}</span>
-                    ) : (
-                      <span style={{ color: "var(--text-muted)" }}>No issues detected</span>
-                    )}
-                    {dep.issues.length > 1 && (
-                      <span className="nifi-issue-more"> +{dep.issues.length - 1} more</span>
-                    )}
-                  </td>
-                </tr>
-              )})}
-            </tbody>
-          </table>
-          {!data?.deployments?.length && !overview.isLoading && (
+          <DeploymentSearchList
+            rows={deploymentList}
+            selectedKey={expandedNs}
+            onSelect={setExpandedNs}
+            deploymentKey={(dep) => deploymentKey(dep.namespace, dep.name)}
+            renderName={(dep) => <strong className="mono">{dep.namespace}</strong>}
+            searchPlaceholder="Search NiFi namespace or issue…"
+            extraHeader="Pods"
+            renderExtraCell={(dep) => (
+              <span className="mono">
+                {dep.pods_ready ?? "—"}/{dep.pods_total ?? "—"}
+              </span>
+            )}
+          />
+          {!deploymentList.length && !overview.isLoading && (
             <div className="empty-state">No NiFi deployments found (VPN / kubeconfig).</div>
           )}
         </div>
@@ -244,27 +215,19 @@ function DeploymentStackCard({
 }) {
   const ns = deployment.namespace
   return (
-    <div className={`stack-card ${stackClass(deployment.status)}`}>
-      <button type="button" className="nifi-stack-toggle" onClick={onToggle}>
-        <div className="stack-card-header" style={{ borderBottom: expanded ? undefined : "none" }}>
-          <div>
-            <div className="stack-layer">NiFi data flow (namespace)</div>
-            <strong className="mono" style={{ fontSize: 13 }}>
-              {ns}
-            </strong>
-          </div>
-          <div className="stack-card-header-meta">
-            <span className="tag tag-sm">{deployment.logs?.source ?? "logs"}</span>
-            <StatusPill
-              variant={statusVariant(deployment.status)}
-              label={statusLabel(deployment.status)}
-            />
-          </div>
-        </div>
-      </button>
-
-      {expanded && (
-        <div className="stack-body">
+    <DeploymentCollapsibleCard
+      expanded={expanded}
+      onToggle={onToggle}
+      status={deployment.status}
+      layerLabel="NiFi data flow (namespace)"
+      title={
+        <strong className="mono" style={{ fontSize: 13 }}>
+          {ns}
+        </strong>
+      }
+      logsSource={deployment.logs?.source ?? "logs"}
+      body={
+        <>
           {deployment.issues.length > 0 ? (
             <ul className="nifi-issue-list">
               {deployment.issues.map((issue) => (
@@ -275,7 +238,7 @@ function DeploymentStackCard({
             <p style={{ margin: "0 0 0.75rem" }}>No issues detected for this deployment.</p>
           )}
 
-          <div className="job-status-grid" style={{ padding: 0, marginBottom: "0.75rem" }}>
+          <div className="job-status-grid job-status-grid--stack">
             {Object.entries(deployment.metrics).map(([key, value]) => {
               const label =
                 key === "deployed_flows"
@@ -317,10 +280,9 @@ function DeploymentStackCard({
               ))}
             </div>
           </CollapsibleSection>
-        </div>
-      )}
-
-      <div className="stack-logs">
+        </>
+      }
+      logs={
         <DeploymentLogsBlock
           deploymentName={deployment.namespace}
           namespace={deployment.namespace}
@@ -328,7 +290,7 @@ function DeploymentStackCard({
           isLoading={isOverviewLoading}
           analyze={buildLogAnalyzeContext(clusterId, "nifi", deployment)}
         />
-      </div>
-    </div>
+      }
+    />
   )
 }

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   CartesianGrid,
   Line,
@@ -16,7 +16,10 @@ import { JobStatusPanel } from "./JobStatusPanel"
 import { MetricsChart } from "./MetricsChart"
 import { DeploymentLogsBlock } from "./DeploymentLogsBlock"
 import { StatusPill } from "./StatusPill"
+import { DeploymentCollapsibleCard } from "./DeploymentCollapsibleCard"
+import { DeploymentSearchList } from "./DeploymentSearchList"
 import { deploymentKey } from "../utils/deploymentKey"
+import { pickDefaultExpandedDeploymentKey } from "../utils/deploymentExpand"
 
 const CHART_BY_PRODUCT: Record<string, { title: string; query: string }> = {
   nifi: {
@@ -41,26 +44,6 @@ const CHART_BY_PRODUCT: Record<string, { title: string; query: string }> = {
   },
 }
 
-function statusVariant(status: string): "ok" | "warn" | "crit" | "unknown" {
-  if (status === "healthy") return "ok"
-  if (status === "degraded") return "warn"
-  if (status === "critical") return "crit"
-  return "unknown"
-}
-
-function statusLabel(status: string): string {
-  if (status === "healthy") return "Healthy"
-  if (status === "degraded") return "Degraded"
-  if (status === "critical") return "Critical"
-  return status
-}
-
-function stackClass(status: string): string {
-  if (status === "healthy") return "healthy"
-  if (status === "critical") return "critical"
-  return "contributing"
-}
-
 type ServiceDeploymentsDashboardProps = {
   product: string
   clusterId: string
@@ -78,6 +61,7 @@ export function ServiceDeploymentsDashboard({
 }: ServiceDeploymentsDashboardProps) {
   const [history, setHistory] = useState<Array<{ t: string; count: number }>>([])
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
+  const expandInitRef = useRef(false)
 
   const overview = useQuery({
     queryKey: ["product-overview", product, clusterId],
@@ -106,18 +90,22 @@ export function ServiceDeploymentsDashboard({
     })
   }, [data?.deployment_count, overview.dataUpdatedAt])
 
+  const multipleDeployments = deployments.length > 1
+
+  useEffect(() => {
+    expandInitRef.current = false
+  }, [clusterId, product])
+
   useEffect(() => {
     if (focusNamespace) {
-      const match = deployments.find((d) => d.namespace === focusNamespace)
-      setExpandedKey(match ? deploymentKey(match.namespace, match.name) : focusNamespace)
+      setExpandedKey(pickDefaultExpandedDeploymentKey(deployments, focusNamespace))
       onFocusApplied?.()
       return
     }
-    const first = deployments[0]
-    if (first && !expandedKey) {
-      setExpandedKey(deploymentKey(first.namespace, first.name))
-    }
-  }, [deployments, expandedKey, focusNamespace, onFocusApplied])
+    if (expandInitRef.current || !deployments.length) return
+    expandInitRef.current = true
+    setExpandedKey(pickDefaultExpandedDeploymentKey(deployments))
+  }, [deployments, focusNamespace, onFocusApplied, clusterId, product])
 
   const chart = CHART_BY_PRODUCT[product]
   const title = heading ?? `${product.toUpperCase()} deployments`
@@ -135,66 +123,35 @@ export function ServiceDeploymentsDashboard({
           <h2 className="panel-title">
             {title} — {data?.display_name ?? clusterId}
           </h2>
-          <StatusPill
-            variant={overview.isFetching ? "warn" : issueCount ? "warn" : "ok"}
-            label={
-              overview.isFetching
-                ? "Syncing…"
-                : issueCount
-                  ? `${issueCount} with issues · ${REFETCH_FAST_MS / 1000}s`
-                  : `Live · ${REFETCH_FAST_MS / 1000}s`
-            }
-          />
+          <div className="panel-header-actions">
+            {multipleDeployments ? (
+              <button
+                type="button"
+                className="link-btn"
+                onClick={() => setExpandedKey(null)}
+              >
+                Collapse all
+              </button>
+            ) : null}
+            <StatusPill
+              variant={overview.isFetching ? "warn" : issueCount ? "warn" : "ok"}
+              label={
+                overview.isFetching
+                  ? "Syncing…"
+                  : issueCount
+                    ? `${issueCount} with issues · ${REFETCH_FAST_MS / 1000}s`
+                    : `Live · ${REFETCH_FAST_MS / 1000}s`
+              }
+            />
+          </div>
         </div>
         <div className="panel-body" style={{ paddingTop: 0 }}>
-          <table className="data-table nifi-dep-table">
-            <thead>
-              <tr>
-                <th>Deployment</th>
-                <th>Status</th>
-                <th>Issues</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deployments.map((dep) => {
-                const key = deploymentKey(dep.namespace, dep.name)
-                return (
-                <tr
-                  key={key}
-                  className={expandedKey === key ? "selected" : ""}
-                  onClick={() => setExpandedKey(key)}
-                >
-                  <td>
-                    <strong>{dep.name}</strong>
-                    <div className="mono" style={{ color: "var(--text-muted)", marginTop: 2 }}>
-                      {dep.namespace}
-                    </div>
-                  </td>
-                  <td>
-                    <StatusPill variant={statusVariant(dep.status)} label={statusLabel(dep.status)} />
-                  </td>
-                  <td>
-                    {dep.issues.length ? (
-                      <button
-                        type="button"
-                        className="deployment-issue-link deployment-issue-link--issue"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setExpandedKey(key)
-                        }}
-                      >
-                        {dep.issues[0]}
-                      </button>
-                    ) : (
-                      <span className="deployment-issue-link deployment-issue-link--ok">
-                        No issues detected
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              )})}
-            </tbody>
-          </table>
+          <DeploymentSearchList
+            rows={deployments}
+            selectedKey={expandedKey}
+            onSelect={setExpandedKey}
+            deploymentKey={(dep) => deploymentKey(dep.namespace, dep.name)}
+          />
           {!deployments.length && !overview.isLoading && (
             <div className="empty-state">No deployments found (VPN / kubeconfig).</div>
           )}
@@ -269,27 +226,20 @@ function DeploymentStackCard({
   isOverviewLoading?: boolean
 }) {
   return (
-    <div className={`stack-card ${stackClass(deployment.status)}`}>
-      <button type="button" className="nifi-stack-toggle" onClick={onToggle}>
-        <div className="stack-card-header" style={{ borderBottom: expanded ? undefined : "none" }}>
-          <div>
-            <div className="stack-layer">{product.toUpperCase()} deployment</div>
-            <strong style={{ fontSize: 14 }}>{deployment.name}</strong>
-            <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)" }}>
-              {deployment.namespace}
-            </div>
-          </div>
-          <div className="stack-card-header-meta">
-            <span className="tag tag-sm">{deployment.logs?.source ?? "logs"}</span>
-            <StatusPill
-              variant={statusVariant(deployment.status)}
-              label={statusLabel(deployment.status)}
-            />
-          </div>
+    <DeploymentCollapsibleCard
+      expanded={expanded}
+      onToggle={onToggle}
+      status={deployment.status}
+      layerLabel={`${product.toUpperCase()} deployment`}
+      title={<strong style={{ fontSize: 14 }}>{deployment.name}</strong>}
+      subtitle={
+        <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          {deployment.namespace}
         </div>
-      </button>
-      {expanded && (
-        <div className="stack-body">
+      }
+      logsSource={deployment.logs?.source ?? "logs"}
+      body={
+        <>
           {deployment.issues.length > 0 ? (
             <ul className="nifi-issue-list">
               {deployment.issues.map((issue) => (
@@ -299,12 +249,12 @@ function DeploymentStackCard({
           ) : (
             <p style={{ margin: "0 0 0.75rem" }}>No issues detected.</p>
           )}
-          {deployment.detail && (
+          {deployment.detail ? (
             <pre className="nifi-log-pre" style={{ maxHeight: 80 }}>
               {JSON.stringify(deployment.detail, null, 2)}
             </pre>
-          )}
-          <div className="job-status-grid" style={{ padding: 0, marginBottom: "0.75rem" }}>
+          ) : null}
+          <div className="job-status-grid job-status-grid--stack">
             {Object.entries(deployment.metrics).map(([key, value]) => (
               <div key={key} className="job-status-tile">
                 <div className="job-status-value">{value ?? "—"}</div>
@@ -312,10 +262,9 @@ function DeploymentStackCard({
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      <div className="stack-logs">
+        </>
+      }
+      logs={
         <DeploymentLogsBlock
           deploymentName={deployment.name}
           namespace={deployment.namespace}
@@ -323,7 +272,7 @@ function DeploymentStackCard({
           isLoading={isOverviewLoading}
           analyze={buildLogAnalyzeContext(clusterId, product, deployment)}
         />
-      </div>
-    </div>
+      }
+    />
   )
 }

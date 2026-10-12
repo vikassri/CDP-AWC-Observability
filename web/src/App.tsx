@@ -9,6 +9,7 @@ import { ClusterSidebarNav } from "./components/ClusterSidebarNav"
 import { FleetJobOverview } from "./components/FleetJobOverview"
 import { NiFiDeploymentsDashboard } from "./components/NiFiDeploymentsDashboard"
 import { ServiceDeploymentsDashboard } from "./components/ServiceDeploymentsDashboard"
+import { SparkDeploymentsDashboard } from "./components/SparkDeploymentsDashboard"
 import { SettingsPage } from "./components/SettingsPage"
 import { PRODUCT_CLUSTER } from "./constants/clusters"
 import { isObservableProduct, productLabel } from "./constants/products"
@@ -175,7 +176,21 @@ function ObservabilityShell({ username, onLogout }: ObservabilityShellProps) {
 
             {view === "cluster" &&
               showServiceDashboard &&
+              clusterProduct === "spark" &&
+              activeCluster && (
+                <SparkDeploymentsDashboard
+                  clusterId={activeCluster.id}
+                  focusNamespace={
+                    deploymentFocus?.product === "spark" ? deploymentFocus.namespace : undefined
+                  }
+                  onFocusApplied={() => setDeploymentFocus(null)}
+                />
+              )}
+
+            {view === "cluster" &&
+              showServiceDashboard &&
               clusterProduct !== "nifi" &&
+              clusterProduct !== "spark" &&
               activeCluster && (
                 <ServiceDeploymentsDashboard
                   product={clusterProduct}

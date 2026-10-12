@@ -546,10 +546,39 @@ body {
   align-items: center;
   gap: 0.35rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.stack-card-header-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.stack-card-title-row {
+  min-width: 0;
+}
+
+.stack-card--minimized {
+  box-shadow: none;
+}
+
+.stack-card-toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .stack-logs {
-  padding: 0.65rem 0.75rem 0.75rem;
+  padding: 1rem 0.75rem 0.85rem;
   border-top: 1px solid var(--border);
   background: var(--bg-surface);
 }
@@ -557,7 +586,7 @@ body {
 .deployment-logs-split {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .detail-box-logs-compact {
@@ -577,10 +606,20 @@ body {
 }
 
 .stack-body {
-  padding: 0.65rem 0.75rem;
+  padding: 0.65rem 0.75rem 0.85rem;
   font-size: 12px;
   color: var(--text);
   line-height: 1.5;
+}
+
+.stack-body .nifi-log-pre {
+  margin: 0.35rem 0 1rem;
+}
+
+.stack-body .job-status-grid--stack {
+  padding: 0;
+  margin: 0 0 1rem;
+  gap: 0.75rem;
 }
 
 .stack-card.contributing {
@@ -2115,6 +2154,107 @@ body {
 
 .deployment-issue-link--issue {
   color: var(--crit);
+}
+
+.panel-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.deployment-search-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deployment-search-field {
+  display: block;
+}
+
+.deployment-search-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: inherit;
+  background: var(--bg-muted);
+}
+
+.deployment-search-input:focus {
+  outline: 2px solid rgb(0 80 160 / 20%);
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.deployment-table-wrap--scroll {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.deployment-table-wrap--scroll .data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-muted);
+}
+
+.deployment-search-empty {
+  padding: 0.75rem;
+  font-size: 12px;
+}
+
+.deployment-search-count {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.spark-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.spark-metrics-strip {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.spark-workspace-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.spark-workspace-list--scroll {
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.spark-workspace-group.collapsible-section {
+  margin-bottom: 0;
+}
+
+.spark-app-state {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 .deployment-issue-link--ok {
